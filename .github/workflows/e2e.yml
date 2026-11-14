@@ -1,0 +1,80 @@
+name: E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      rc_version:
+        description: Rocket.Chat image tag to test against
+        default: "9.0.0"
+  schedule:
+    - cron: "17 3 * * *" # nightly, to catch drift in dependencies and browsers
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "ruff>=0.6"
+      - run: ruff check .
+      - run: ruff format --check .
+
+  e2e:
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RC_VERSION: ${{ inputs.rc_version || '9.0.0' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start Rocket.Chat
+        run: docker compose up -d --wait
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          pip install -e .
+          python -m playwright install --with-deps chromium
+
+      - name: Run tests
+        run: >
+          pytest -n 4
+          --junitxml=reports/junit.xml
+          --html=reports/report.html --self-contained-html
+
+      - name: Rocket.Chat logs
+        if: failure()
+        run: docker compose logs --tail=300 rocketchat
+
+      - name: Upload report and failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            reports/
+            test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Stop Rocket.Chat
+        if: always()
+        run: docker compose down -v
