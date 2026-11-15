@@ -1,6 +1,11 @@
 # Rocket.Chat E2E Regression Suite
 
 [![E2E](../../actions/workflows/e2e.yml/badge.svg)](../../actions/workflows/e2e.yml)
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-Python-2EAD33?logo=playwright&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-8-0A9EDC?logo=pytest&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![Ruff](https://img.shields.io/badge/lint-Ruff-D7FF64?logo=ruff&logoColor=black)
 
 End-to-end regression tests for [Rocket.Chat](https://rocket.chat), written in **Python** with
 **Playwright** and **pytest**. The suite starts its own disposable Rocket.Chat server in Docker,
